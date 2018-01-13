@@ -57,48 +57,56 @@ void loop() {
 
   Serial.println("");
 
-  if (sensors[0] > corridorThreshold){
-    motors.setSpeeds(-(speed), -(speed));
-    delay(turnDuration);
-    motors.setSpeeds(turnSpeed, -(turnSpeed));
-    delay(turnDuration);
-    motors.setSpeeds(speed, speed);
-  } else if (sensors[5] > corridorThreshold) {
-    motors.setSpeeds(-(speed), -(speed));
-    delay(turnDuration);
-    motors.setSpeeds(-(turnSpeed), turnSpeed);
-    delay(turnDuration);
-    motors.setSpeeds(speed, speed);
-    } 
-    //else {
-//    motors.setSpeeds(speed, speed);
-//  }
-
   // Read in user value for the current command
   char val = Serial.read();
 
-  // Forwards
-  if(val == 'w') {
-    motors.setSpeeds(speed, speed);
-  }
-
-  // Backwards
-  if(val == 'x') {
-    motors.setSpeeds(-(speed), -(speed));
-  }
-
-  // Right
-  if(val == 'd') {
-    motors.setSpeeds(turnSpeed, 0);
-  } 
-
-  // Left
-  if(val ==  'a') {
-    motors.setSpeeds(0, turnSpeed);
-  }
-
-  // Stop
-  if(val == 's') {
+  // Stop at corner/manual control
+  if(val == 'h') {
     motors.setSpeeds(0, 0);
+    while (val != 'b') {
+      val = Serial.read();
+      
+      // Forwards
+      if(val == 'w') {
+        motors.setSpeeds(speed, speed);
+      }
+    
+      // Backwards
+      if(val == 'x') {
+        motors.setSpeeds(-(speed), -(speed));
+      }
+    
+      // Right
+      if(val == 'd') {
+        motors.setSpeeds(turnSpeed, 0);
+      } 
+    
+      // Left
+      if(val ==  'a') {
+        motors.setSpeeds(0, turnSpeed);
+      }
+    
+      // Stop
+      if(val == 's') {
+        motors.setSpeeds(0, 0);
+      }
+      
+    }
+  } else {
+    if (sensors[0] > corridorThreshold){
+        motors.setSpeeds(-(speed), -(speed));
+        delay(turnDuration);
+        motors.setSpeeds(turnSpeed, -(turnSpeed));
+        delay(turnDuration);
+        motors.setSpeeds(speed, speed);
+      } else if (sensors[5] > corridorThreshold) {
+        motors.setSpeeds(-(speed), -(speed));
+        delay(turnDuration);
+        motors.setSpeeds(-(turnSpeed), turnSpeed);
+        delay(turnDuration);
+        motors.setSpeeds(speed, speed);
+      } else {
+        motors.setSpeeds(speed, speed);
+    } 
   }
 }
