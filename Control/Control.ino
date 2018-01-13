@@ -61,26 +61,25 @@ void loop() {
   unsigned int sensors[6];
   reflectanceSensors.read(sensors);
 
-  Serial.print("Ping: ");
-  Serial.print(sonar.ping_cm());
-  Serial.println("cm");
-
-  for (byte i = 0; i < 6; i++) {
-    Serial.print(sensors[i]);
-    Serial.print(' ');
-  }
-
-  Serial.println("");
+//  Serial.print("Ping: ");
+//  Serial.print(sonar.ping_cm());
+//  Serial.println("cm");
+//
+//  for (byte i = 0; i < 6; i++) {
+//    Serial.print(sensors[i]);
+//    Serial.print(' ');
+//  }
+//
+//  Serial.println("");
 
   // Read in user value for the current command
   char val = Serial.read();
 
   // Manual override 
   if (val == 'v') {
-    Serial.println("Manual Override initiated. Please direct into room and press 'b' to scan");
+    Serial.println("Manual Override initiated. Please direct into room or corridor and press 'b' to continue");
     motors.setSpeeds(0, 0);
     manualControl(val);
-    
     Serial.println("r for room, c for corridor");
     char roomOrCorridor = '0';
     
@@ -90,7 +89,7 @@ void loop() {
     
     if (roomOrCorridor == 'r') {
       checkRoom();
-      motors.setSpeed(0, 0);
+      motors.setSpeeds(0, 0);
     } else {
       Serial.print("Side corridor with ID: ");
       Serial.println(sideIdCount++);
@@ -157,13 +156,37 @@ void manualControl(char val) {
 
 void checkRoom() {
   Serial.print("Room with ID: ");
-  Serial.println(roomIdCount++);
+  int roomId = roomIdCount++;
+  Serial.println(roomId);
+
+  bool found = false;
 
   motors.setSpeeds(turnSpeed, -(turnSpeed));
+  Serial.print("First turn!: ");
+  Serial.println(sonar.ping_cm());
+  if (sonar.ping_cm() > 0 && !(found)) {
+    Serial.print("Object found in room: ");
+    Serial.println(roomId);
+    found = true;
+  }
   delay(turnDuration);
   motors.setSpeeds(-(turnSpeed), turnSpeed);
+  Serial.print("Second turn!: ");
+  Serial.println(sonar.ping_cm());
+  if (sonar.ping_cm() > 0 && !(found)) {
+    Serial.print("Object found in room: ");
+    Serial.println(roomId);
+    found = true;
+  }
   delay(2 * turnDuration);
   motors.setSpeeds(turnSpeed, -(turnSpeed));
+  Serial.print("Final turn!: ");
+  Serial.println(sonar.ping_cm());
+  if (sonar.ping_cm() > 0 && !(found)) {
+    Serial.print("Object found in room: ");
+    Serial.println(roomId);
+    found = true;
+  }
   delay(turnDuration);
 }
 
