@@ -61,17 +61,6 @@ void loop() {
   unsigned int sensors[6];
   reflectanceSensors.read(sensors);
 
-//  Serial.print("Ping: ");
-//  Serial.print(sonar.ping_cm());
-//  Serial.println("cm");
-//
-//  for (byte i = 0; i < 6; i++) {
-//    Serial.print(sensors[i]);
-//    Serial.print(' ');
-//  }
-//
-//  Serial.println("");
-
   // Read in user value for the current command
   char val = Serial.read();
 
@@ -90,6 +79,7 @@ void loop() {
     if (roomOrCorridor == 'r') {
       checkRoom();
       motors.setSpeeds(0, 0);
+      manualControl('s');
     } else {
       Serial.print("Side corridor with ID: ");
       Serial.println(sideIdCount++);
@@ -155,6 +145,11 @@ void manualControl(char val) {
 }
 
 void checkRoom() {
+  Serial.println("Is the room on the left or right side of the corridor? (l or r)");
+  char leftOrRight = '0';
+  while(leftOrRight != 'l' && leftOrRight != 'r'){
+    leftOrRight = Serial.read();
+  }
   Serial.print("Room with ID: ");
   int roomId = roomIdCount++;
   Serial.println(roomId);
@@ -162,8 +157,6 @@ void checkRoom() {
   bool found = false;
 
   motors.setSpeeds(turnSpeed, -(turnSpeed));
-  Serial.print("First turn!: ");
-  Serial.println(sonar.ping_cm());
   if (sonar.ping_cm() > 0 && !(found)) {
     Serial.print("Object found in room: ");
     Serial.println(roomId);
@@ -171,8 +164,6 @@ void checkRoom() {
   }
   delay(turnDuration);
   motors.setSpeeds(-(turnSpeed), turnSpeed);
-  Serial.print("Second turn!: ");
-  Serial.println(sonar.ping_cm());
   if (sonar.ping_cm() > 0 && !(found)) {
     Serial.print("Object found in room: ");
     Serial.println(roomId);
@@ -180,8 +171,6 @@ void checkRoom() {
   }
   delay(2 * turnDuration);
   motors.setSpeeds(turnSpeed, -(turnSpeed));
-  Serial.print("Final turn!: ");
-  Serial.println(sonar.ping_cm());
   if (sonar.ping_cm() > 0 && !(found)) {
     Serial.print("Object found in room: ");
     Serial.println(roomId);
