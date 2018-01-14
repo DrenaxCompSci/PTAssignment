@@ -64,10 +64,8 @@ void loop() {
   // Manual override
   if (val == 'v') {
     Serial.println("Manual Override initiated. Please direct into room or corridor and press 'b' to continue");
-    // Non-checked value
-    val = 'p';
-    // Rescursive function for side-corridors & rooms within
-    manualOverride(val);
+    val = 'p';  // Random value that isn't used for control control
+    manualOverride(val);    // Rescursive function for side-corridors & rooms within
   }
 
   cornerCheck(val);
@@ -170,6 +168,12 @@ void manualOverride(char val) {
           }
                    
       }
+      // Turn around 180 degrees
+      motors.setSpeeds(-(speed), -(speed));
+      delay(500);
+      motors.setSpeeds(turnSpeed, -(turnSpeed));
+      delay(1500);
+      cornerCheck(val);
     }
 }
 
@@ -196,9 +200,11 @@ bool wallCheck() {
   
   if (sensors[2] > cornerThreshold) {
     motors.setSpeeds(0, 0);
-    Serial.println("Wall found! Waiting for prompt...");
-    while(true){}
-    // Wait for user prompt to turn around, go back to end of corridor until it hits the opposite wall, in which the user takes manual control once again
+    Serial.println("Wall found! Waiting for prompt (press b)...");
+    char val = 'c';
+    while(val != 'b'){
+      val = Serial.read();  
+    }    
     return true;
   } else {
     stayInCorridor();
