@@ -68,7 +68,12 @@ void loop() {
     manualOverride(val);    // Rescursive function for side-corridors & rooms within
   }
 
-  cornerCheck(val);
+  if (val == 'e') {
+    Serial.println("End of main corridor!");
+    motors.setSpeed(0, 0);
+  }
+
+  cornerCheck(val); // Moves forward until a corner is found
 }
 
 void calibration() {
@@ -106,8 +111,8 @@ void stayInCorridor() {
     }
 }
 
-void manualControl(char val) {
-  while (val != 'b') {
+char manualControl(char val) {
+  while (val != 'b' && val != 'e') {
     val = Serial.read();
 
     // Forwards
@@ -122,12 +127,12 @@ void manualControl(char val) {
 
     // Right
     if (val == 'd') {
-      motors.setSpeeds(turnSpeed, 0);
+      motors.setSpeeds(turnSpeed, -(turnSpeed));
     }
 
     // Left
     if (val ==  'a') {
-      motors.setSpeeds(0, turnSpeed);
+      motors.setSpeeds(-(turnSpeed), turnSpeed);
     }
 
     // Stop
@@ -135,11 +140,12 @@ void manualControl(char val) {
       motors.setSpeeds(0, 0);
     }
   }
+  return val;
 }
 
 void manualOverride(char val) {
     motors.setSpeeds(0, 0);
-    manualControl(val);
+    val = manualControl(val);
 
     Serial.println("Please enter 'r' for room or 'c' for side-corridor");
     char roomOrCorridor = '0';
@@ -153,7 +159,7 @@ void manualOverride(char val) {
       // Room
       checkRoom();
       motors.setSpeeds(0, 0);
-      manualControl(val);
+      val = manualControl(val);
     } else {
       // Side-corridor
       Serial.print("Side corridor with ID: ");
@@ -184,11 +190,20 @@ void cornerCheck(char val) {
   // Stop at corner/manual control
   if (sensors[2] > cornerThreshold) {
     motors.setSpeeds(0, 0);
-    Serial.println("Corner found! Manual Override initiated. Press 'b' to start automatic movement again");
-    manualControl(val);
-    Serial.print("Left corridor with ID: ");
-    Serial.print(corridorIdCount++);
-    Serial.println(", onwards!");
+    Serial.println("Corner found! Manual Override initiated. Press 'b' to start automatic movement again, or 'e' to signal end of main corridor");
+    val = manualControl(val);
+
+    // Corner manually moved around
+    if (val == 'b') {
+      Serial.print("Left corridor with ID: ");
+      Serial.print(corridorIdCount++);
+      Serial.println(", onwards!");
+    }
+
+    if (val == 'e') {
+      // End of main corridor
+    }
+    
   } else {
     stayInCorridor();
   }
