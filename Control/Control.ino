@@ -25,7 +25,7 @@ const int turnDuration = 250; //0.5 seconds
 
 // Reflectance sensor variables
 const int corridorThreshold = 150;
-const int cornerThreshold = 85;
+const int cornerThreshold = 85-;
 
 // Id/Mapping
 int roomIdCount = 0;
