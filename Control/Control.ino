@@ -76,6 +76,9 @@ void loop() {
   cornerCheck(val); // Moves forward until a corner is found
 }
 
+// ---------------------
+// Calibrates the reflectance sensors
+// ---------------------
 void calibration() {
   for (int i = 0; i < 80; i++) {
     if ((i > 10 && i <= 30) || (i > 50 && i <= 70)) {
@@ -90,27 +93,9 @@ void calibration() {
   Serial.println("Calibration complete! Press Zumo button to start.");
 }
 
-void stayInCorridor() {
-  unsigned int sensors[6];
-  reflectanceSensors.read(sensors);
-  
-  if (sensors[0] > corridorThreshold) {
-      motors.setSpeeds(-(speed / 2), -(speed / 2));
-      delay(turnDuration);
-      motors.setSpeeds(turnSpeed, -(turnSpeed));
-      delay(turnDuration);
-      motors.setSpeeds(speed, speed);
-    } else if (sensors[5] > corridorThreshold) {
-      motors.setSpeeds(-(speed / 2), -(speed / 2));
-      delay(turnDuration);
-      motors.setSpeeds(-(turnSpeed), turnSpeed);
-      delay(turnDuration);
-      motors.setSpeeds(speed, speed);
-    } else {
-      motors.setSpeeds(speed, speed);
-    }
-}
-
+// ---------------------
+// Gives control to the user until the character b is pressed
+// ---------------------
 char manualControl(char val) {
   while (val != 'b' && val != 'e') {
     val = Serial.read();
@@ -143,6 +128,9 @@ char manualControl(char val) {
   return val;
 }
 
+// ---------------------
+// Triggers when the user inputs 'v', resulting in directing to either a room or side-corridor
+// ---------------------
 void manualOverride(char val) {
     motors.setSpeeds(0, 0);
     val = manualControl(val);
@@ -183,6 +171,9 @@ void manualOverride(char val) {
     }
 }
 
+// ---------------------
+// Checks for a wall in front that will be a corner the user has to manually navigate around
+// ---------------------
 void cornerCheck(char val) {
   unsigned int sensors[6];
   reflectanceSensors.read(sensors);
@@ -244,6 +235,38 @@ void cornerCheck(char val) {
   }
 }
 
+// ---------------------
+// Proceeds forward, moving away from lines detected either side
+// ---------------------
+void stayInCorridor() {
+  unsigned int sensors[6];
+  reflectanceSensors.read(sensors);
+  
+  if (sensors[0] > corridorThreshold) {
+      motors.setSpeeds(-(speed / 2), -(speed / 2));
+      delay(turnDuration);
+      motors.setSpeeds(turnSpeed, -(turnSpeed));
+      delay(turnDuration);
+      motors.setSpeeds(speed, speed);
+    } else if (sensors[5] > corridorThreshold) {
+      motors.setSpeeds(-(speed / 2), -(speed / 2));
+      delay(turnDuration);
+      motors.setSpeeds(-(turnSpeed), turnSpeed);
+      delay(turnDuration);
+      motors.setSpeeds(speed, speed);
+    } else {
+      motors.setSpeeds(speed, speed);
+    }
+}
+
+// The hope behind this function was to return the zumo to the start
+// I would have liked to done this by building up a collection of turns taken,
+// reverse the order and reverse the direction (so if the turns were L L R, the return
+// route would require L R R). 
+// The zumo would then navigate forward until it hit corners, at which point it would 
+// turn the direction automatically rather than require manual control. 
+// As a more advance route, it would also add directions to the list if the zumo had found
+// anybody in rooms it had searched en route.
 void moveToNextTurn() {
   Serial.println("Returning to start...");
   while (returnRouteCount < routeCount) {
@@ -282,6 +305,9 @@ void moveToNextTurn() {
   
 }
 
+// ---------------------
+// Checks for a wall at the end of a side-corridor rather than corner
+// ---------------------
 bool wallCheck() {
   unsigned int sensors[6];
   reflectanceSensors.read(sensors);
@@ -300,6 +326,9 @@ bool wallCheck() {
   }
 }
 
+// ---------------------
+// Scans a room, declaring if it finds anything
+// ---------------------
 void checkRoom() {
   Serial.println("Is the room on the left or right side of the corridor? (l or r)");
   char leftOrRight = '0';
