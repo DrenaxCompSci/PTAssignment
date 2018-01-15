@@ -13,14 +13,19 @@ ZumoReflectanceSensorArray reflectanceSensors;
 Pushbutton button(ZUMO_BUTTON);
 NewPing sonar(TRIGGER_PIN, ECHO_PIN, MAX_DISTANCE);
 
+char route[20];
+int routeCount = 0;
+char returnRoute[20];
+int returnRouteCount = 0;
+
 // Motor variables
 const int speed = 100;
 const int turnSpeed = 150;
-const int turnDuration = 500; //0.5 seconds
+const int turnDuration = 250; //0.5 seconds
 
 // Reflectance sensor variables
-const int corridorThreshold = 140;
-const int cornerThreshold = 80;
+const int corridorThreshold = 150;
+const int cornerThreshold = 85-;
 
 // Id/Mapping
 int roomIdCount = 0;
@@ -68,7 +73,7 @@ void loop() {
     manualOverride(val);    // Rescursive function for side-corridors & rooms within
   }
 
-  cornerCheck(val);
+  cornerCheck(val); // Moves forward until a corner is found
 }
 
 void calibration() {
@@ -106,8 +111,8 @@ void stayInCorridor() {
     }
 }
 
-void manualControl(char val) {
-  while (val != 'b') {
+char manualControl(char val) {
+  while (val != 'b' && val != 'e') {
     val = Serial.read();
 
     // Forwards
@@ -122,12 +127,12 @@ void manualControl(char val) {
 
     // Right
     if (val == 'd') {
-      motors.setSpeeds(turnSpeed, 0);
+      motors.setSpeeds(turnSpeed, -(turnSpeed));
     }
 
     // Left
     if (val ==  'a') {
-      motors.setSpeeds(0, turnSpeed);
+      motors.setSpeeds(-(turnSpeed), turnSpeed);
     }
 
     // Stop
@@ -135,11 +140,12 @@ void manualControl(char val) {
       motors.setSpeeds(0, 0);
     }
   }
+  return val;
 }
 
 void manualOverride(char val) {
     motors.setSpeeds(0, 0);
-    manualControl(val);
+    val = manualControl(val);
 
     Serial.println("Please enter 'r' for room or 'c' for side-corridor");
     char roomOrCorridor = '0';
@@ -153,7 +159,7 @@ void manualOverride(char val) {
       // Room
       checkRoom();
       motors.setSpeeds(0, 0);
-      manualControl(val);
+      val = manualControl(val);
     } else {
       // Side-corridor
       Serial.print("Side corridor with ID: ");
@@ -184,14 +190,96 @@ void cornerCheck(char val) {
   // Stop at corner/manual control
   if (sensors[2] > cornerThreshold) {
     motors.setSpeeds(0, 0);
-    Serial.println("Corner found! Manual Override initiated. Press 'b' to start automatic movement again");
-    manualControl(val);
-    Serial.print("Left corridor with ID: ");
-    Serial.print(corridorIdCount++);
-    Serial.println(", onwards!");
+    Serial.println("Corner found! Manual Override initiated. Press 'b' to start automatic movement again, or 'e' to signal end of main corridor");
+    val = manualControl(val);
+
+    // Corner manually moved around
+    if (val == 'b') {
+      Serial.println("Was this a left or right turn?");
+      val = 'p';
+      while (val != 'l' && val != 'r') {
+        val = Serial.read();
+      }
+      route[routeCount] = val;
+      routeCount++;
+      Serial.print("Left corridor with ID: ");
+      Serial.print(corridorIdCount++);
+      Serial.println(", onwards!");
+    }
+
+    if (val == 'e') {
+      // End of main corridor
+      Serial.println("End of main corridor!");
+      motors.setSpeeds(0, 0);
+      Serial.println("Route taken!");
+      for(int i = 0; i < routeCount; i++) {
+        Serial.println(route[i]);
+      }
+
+      returnRouteCount = routeCount - 1;
+  
+      for(int i = 0; i < routeCount; i++) {
+        returnRoute[returnRouteCount] = route[i];
+        returnRouteCount--;
+      }
+      
+      Serial.println("Return route!");
+      for(int i = 0; i < routeCount; i++) {
+        Serial.println(returnRoute[i]);
+      }
+
+
+      motors.setSpeeds(-(speed), -(speed));
+      delay(500);
+      motors.setSpeeds(turnSpeed, -(turnSpeed));
+      delay(1500);
+      moveToNextTurn();
+      motors.setSpeeds(0, 0);
+      Serial.println("Back at the start!!");
+      delay(1000);
+      exit(0);
+    }
   } else {
     stayInCorridor();
   }
+}
+
+void moveToNextTurn() {
+  Serial.println("Returning to start...");
+  while (returnRouteCount < routeCount) {
+    unsigned int sensors[6];
+    reflectanceSensors.read(sensors);
+    if (sensors[2] > cornerThreshold) {
+      motors.setSpeeds(-(speed / 2), -(speed / 2));
+      delay(turnDuration);
+      if(returnRoute[returnRouteCount] == 'l'){
+        // turn right
+        motors.setSpeeds(turnSpeed, -(turnSpeed));
+        delay(750);
+      } else {
+        // turn left
+        motors.setSpeeds(-(turnSpeed), turnSpeed);
+        delay(750);
+      }
+      returnRouteCount++;
+    } else if (sensors[0] > corridorThreshold) {
+        motors.setSpeeds(-(speed / 2), -(speed / 2));
+        delay(turnDuration);
+        motors.setSpeeds(turnSpeed, -(turnSpeed));
+        delay(turnDuration);
+        motors.setSpeeds(speed, speed);
+    } else if (sensors[5] > corridorThreshold) {
+        motors.setSpeeds(-(speed / 2), -(speed / 2));
+        delay(turnDuration);
+        motors.setSpeeds(-(turnSpeed), turnSpeed);
+        delay(turnDuration);
+        motors.setSpeeds(speed, speed);
+    } else {
+        motors.setSpeeds(speed, speed);
+    }
+    
+  }
+  
 }
 
 bool wallCheck() {
