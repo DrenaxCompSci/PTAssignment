@@ -11,7 +11,7 @@ Key issues:
   - Calibration, it was found to be a huge issue with regards to getting the reflectance
   sensors to play nicely. This became a major problem when trying to get the zumo to navigate
   it's way back out of the maze with no user intervention, as it could quickly go wrong and
-  require a user override. Most of the time spent on this was trying to find ways/tune this problem
+  require a user override. Most of the time spent on this was trying to find ways around this/tune the problem
   away.
   - Using CP5 as a means to make the GUI. Although it works fantastically for sending data to
   the Arduino, even via Xbee (and is fantastically simple). Due to an issue with time management
